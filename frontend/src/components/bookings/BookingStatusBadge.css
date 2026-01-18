@@ -1,0 +1,25 @@
+/* Minimal badge styles using CSS variables for tones.
+   Integrate with your design system tokens. Ensure sufficient contrast. */
+
+.sd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid var(--bd, currentColor);
+  background: var(--bg, transparent);
+  color: var(--fg, currentColor);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sd-badge--sm { padding: 0.125rem 0.375rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; }
+.sd-badge--md { padding: 0.25rem 0.5rem; border-radius: 0.75rem; font-size: 0.8125rem; font-weight: 600; }
+.sd-badge--rounded { border-radius: 999px; }
+
+.sd-badge__icon { display: inline-flex; }
+.sd-badge__text { display: inline-block; }
+
+/* Tone mappings (hook into design tokens) */
+.sd-badge--tone-success { --bg: var(--success-bg-subtle, #E6FAF0); --fg: var(--success-fg, #0F7A48); --bd: var(--success-border, #B8EBD1); }
+.sd-badge--tone-danger  { --bg: var(--danger-bg-subtle, #FDECEC);  --fg: var(--danger-fg, #A31515); --bd: var(--danger-border, #F5C2C2); }
+.sd-badge--tone-neutral { --bg: var(--neutral-bg-subtle, #EEF2F7); --fg: var(--neutral-fg, #334155); --bd: var(--neutral-border, #D0D8E3); }

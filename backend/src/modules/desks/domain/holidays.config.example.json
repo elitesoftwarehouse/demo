@@ -1,0 +1,13 @@
+{
+  "fixedHolidaysEnabled": true,
+  "sundaysEnabled": true,
+  "allowOpenOnNationalHoliday": false,
+  "extraClosedDates": [
+    // Aggiungere date extra locali in formato YYYY-MM-DD, esempio:
+    // "2025-06-24" // Patrono locale
+  ],
+  "exceptionalOpenDates": [
+    // Aggiungere eventuali eccezioni (aperture in deroga) in formato YYYY-MM-DD, esempio:
+    // "2025-12-26"
+  ]
+}

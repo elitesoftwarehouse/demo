@@ -1,0 +1,22 @@
+{
+  "name": "smartdesk-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
+    "@types/jest": "^29.5.12",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "jest": "^29.7.0",
+    "jsdom": "^24.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.4.5"
+  }
+}
