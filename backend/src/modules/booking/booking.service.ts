@@ -1,5 +1,6 @@
 import { bookingRepository, toDateKey } from './booking.repository';
 import { deskRepository } from '../desk/desk.repository';
+import { isHoliday } from './holiday-calendar';
 
 export class BusinessError extends Error {
   constructor(public statusCode: number, message: string) {
@@ -47,8 +48,10 @@ class BookingService {
 
   async createBooking(params: { userId: string; deskId: number; date: string }) {
     const date = toDateKey(params.date);
-    if (!isWeekday(date)) {
-      throw new BusinessError(400, 'Le prenotazioni sono consentite solo nei giorni feriali');
+
+    // Business rule: weekdays only and not in holiday calendar
+    if (!isWeekday(date) || isHoliday(date)) {
+      throw new BusinessError(400, 'Le prenotazioni sono consentite solo nei giorni feriali non festivi');
     }
 
     const desk = await deskRepository.findById(params.deskId);
@@ -56,18 +59,38 @@ class BookingService {
       throw new BusinessError(404, 'Postazione non disponibile');
     }
 
-    const existingByUser = await bookingRepository.findByUserAndDate(params.userId, date);
-    if (existingByUser) {
-      throw new BusinessError(409, 'Hai già una prenotazione per questa data');
+    // Try atomic create to mitigate race conditions
+    try {
+      const created = await bookingRepository.createAtomic({
+        userId: params.userId,
+        deskId: params.deskId,
+        date,
+      });
+      return created;
+    } catch (err: any) {
+      if (err?.code === 'CONFLICT_USER') {
+        throw new BusinessError(409, 'Hai già una prenotazione per questa data');
+      }
+      if (err?.code === 'CONFLICT_DESK') {
+        throw new BusinessError(409, 'La postazione è già prenotata per questa data');
+      }
+      // Fallback explicit checks (non-atomic) for completeness
+      const existingByUser = await bookingRepository.findByUserAndDate(params.userId, date);
+      if (existingByUser) {
+        throw new BusinessError(409, 'Hai già una prenotazione per questa data');
+      }
+      const existingByDesk = await bookingRepository.findByDeskAndDate(params.deskId, date);
+      if (existingByDesk) {
+        throw new BusinessError(409, 'La postazione è già prenotata per questa data');
+      }
+      // Create non-atomic as last resort
+      const created = await bookingRepository.create({
+        userId: params.userId,
+        deskId: params.deskId,
+        date,
+      });
+      return created;
     }
-
-    const existingByDesk = await bookingRepository.findByDeskAndDate(params.deskId, date);
-    if (existingByDesk) {
-      throw new BusinessError(409, 'La postazione è già prenotata per questa data');
-    }
-
-    const created = await bookingRepository.create({ userId: params.userId, deskId: params.deskId, date });
-    return created;
   }
 
   async cancelBooking(params: { bookingId: string; userId: string; reason?: string }) {

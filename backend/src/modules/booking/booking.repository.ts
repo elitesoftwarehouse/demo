@@ -11,6 +11,7 @@ export interface BookingEntity {
   createdAt: Date;
   updatedAt: Date;
   cancelledReason?: string;
+  cancelledAt?: Date;
 }
 
 const bookings: BookingEntity[] = [];
@@ -25,7 +26,9 @@ function toDateKey(date: Date | string): string {
 
 class BookingRepository {
   // constraints are enforced at service layer, repository provides basic ops
-  async create(data: Omit<BookingEntity, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { cancelledReason?: string }): Promise<BookingEntity> {
+  async create(
+    data: Omit<BookingEntity, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { cancelledReason?: string }
+  ): Promise<BookingEntity> {
     const entity: BookingEntity = {
       id: crypto.randomUUID(),
       userId: data.userId,
@@ -40,18 +43,57 @@ class BookingRepository {
     return entity;
   }
 
+  // Atomic check-and-create to mitigate race conditions in memory implementation
+  async createAtomic(
+    data: { userId: string; deskId: number; date: string }
+  ): Promise<BookingEntity> {
+    // All operations below are synchronous to avoid event loop yields
+    const key = toDateKey(data.date);
+    const conflictUser = bookings.find(
+      (b) => b.userId === data.userId && b.date === key && b.status === 'ACTIVE'
+    );
+    if (conflictUser) {
+      const err: any = new Error('User already has an active booking for this date');
+      err.code = 'CONFLICT_USER';
+      throw err;
+    }
+    const conflictDesk = bookings.find(
+      (b) => b.deskId === data.deskId && b.date === key && b.status === 'ACTIVE'
+    );
+    if (conflictDesk) {
+      const err: any = new Error('Desk already booked for this date');
+      err.code = 'CONFLICT_DESK';
+      throw err;
+    }
+    const entity: BookingEntity = {
+      id: crypto.randomUUID(),
+      userId: data.userId,
+      deskId: data.deskId,
+      date: key,
+      status: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    bookings.push(entity);
+    return entity;
+  }
+
   async findById(id: string): Promise<BookingEntity | null> {
     return bookings.find((b) => b.id === id) || null;
   }
 
   async findByUserAndDate(userId: string, date: string): Promise<BookingEntity | null> {
     const key = toDateKey(date);
-    return bookings.find((b) => b.userId === userId && b.date === key && b.status === 'ACTIVE') || null;
+    return (
+      bookings.find((b) => b.userId === userId && b.date === key && b.status === 'ACTIVE') || null
+    );
   }
 
   async findByDeskAndDate(deskId: number, date: string): Promise<BookingEntity | null> {
     const key = toDateKey(date);
-    return bookings.find((b) => b.deskId === deskId && b.date === key && b.status === 'ACTIVE') || null;
+    return (
+      bookings.find((b) => b.deskId === deskId && b.date === key && b.status === 'ACTIVE') || null
+    );
   }
 
   async listByDate(date: string): Promise<BookingEntity[]> {
@@ -65,6 +107,7 @@ class BookingRepository {
     b.status = 'CANCELLED';
     b.updatedAt = new Date();
     b.cancelledReason = reason;
+    b.cancelledAt = new Date();
     return b;
   }
 }
