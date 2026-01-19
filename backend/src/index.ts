@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { json } from 'express';
 import { authRouter } from './modules/auth/auth.router';
 import { bookingsRouter } from './modules/bookings/bookings.router';
+import { coworkingRouter } from './modules/coworking/coworking.router';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/auth', authRouter);
 app.use('/bookings', bookingsRouter);
+app.use('/coworking', coworkingRouter);
 
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'test') {
