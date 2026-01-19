@@ -18,6 +18,11 @@ class UserRepository {
     return u || null;
   }
 
+  async findById(id: string): Promise<UserEntity | null> {
+    const u = users.find((x) => x.id === id);
+    return u || null;
+  }
+
   // helper to seed for tests/dev
   async upsert(user: UserEntity): Promise<UserEntity> {
     const idx = users.findIndex((u) => u.id === user.id);

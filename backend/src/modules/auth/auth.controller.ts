@@ -7,6 +7,10 @@ const loginSchema = z.object({
   password: z.string().min(8, 'Password troppo corta'),
 });
 
+const refreshSchema = z.object({
+  refreshToken: z.string().min(10, 'Token non valido'),
+});
+
 export async function loginController(req: Request, res: Response) {
   try {
     const parsed = loginSchema.safeParse(req.body);
@@ -29,5 +33,21 @@ export async function loginController(req: Request, res: Response) {
       return res.status(status).json({ error: message });
     }
     return res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+export async function refreshController(req: Request, res: Response) {
+  try {
+    const parsed = refreshSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.flatten() });
+    }
+    const { refreshToken } = parsed.data;
+    const result = await authService.refresh(refreshToken, req.headers['user-agent'] || 'unknown');
+    return res.status(200).json(result);
+  } catch (err: any) {
+    const status = err.statusCode || 401;
+    const message = err.message || 'Refresh token non valido';
+    return res.status(status).json({ error: message });
   }
 }
