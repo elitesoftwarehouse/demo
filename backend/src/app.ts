@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { authRouter } from './modules/auth/auth.routes';
 import { protectedRouter } from './modules/protected/protected.routes';
+import { bookingRouter } from './modules/booking/booking.routes';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ export function createApp() {
 
   app.use('/auth', authRouter);
   app.use('/protected', protectedRouter);
+  app.use('/bookings', bookingRouter);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.statusCode || 500;
