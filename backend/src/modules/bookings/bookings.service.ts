@@ -1,6 +1,7 @@
 import { bookingRepository } from './booking.repository';
 import { deskRepository } from '../desks/desk.repository';
-import { isWorkingDay, isValidDateOnly, startOfDateMs, toDateOnlyString } from '../../utils/date';
+import { isBusinessDay, isValidDateOnly, startOfDateMs, toDateOnlyString } from '../../utils/date';
+import { withLock } from '../../utils/lock';
 
 export interface CreateBookingDto {
   deskId: number;
@@ -41,23 +42,27 @@ class BookingsService {
   async create(userId: string, dto: CreateBookingDto) {
     const dateOnly = toDateOnlyString(dto.date);
     if (!isValidDateOnly(dateOnly)) throw new BusinessError('DATE_INVALID', 'Invalid date');
-    if (!isWorkingDay(dateOnly))
+    if (!isBusinessDay(dateOnly))
       throw new BusinessError('NON_WORKING_DAY', 'Bookings allowed on working days only');
 
     const desk = await deskRepository.findById(dto.deskId);
     if (!desk) throw new BusinessError('DESK_NOT_FOUND', 'Desk not found');
     if (!desk.active) throw new BusinessError('DESK_INACTIVE', 'Desk is inactive');
 
-    const existingUser = await bookingRepository.findUserBookingOnDate(userId, dateOnly);
-    if (existingUser)
-      throw new BusinessError('USER_ALREADY_BOOKED', 'User already has a booking for this day');
+    // Concurrency control: serialize creations on the same date to avoid race conditions
+    const lockKey = `booking:create:${dateOnly}`;
+    return withLock(lockKey, async () => {
+      const existingUser = await bookingRepository.findUserBookingOnDate(userId, dateOnly);
+      if (existingUser)
+        throw new BusinessError('USER_ALREADY_BOOKED', 'User already has a booking for this day');
 
-    const existingDesk = await bookingRepository.findDeskBookingOnDate(dto.deskId, dateOnly);
-    if (existingDesk)
-      throw new BusinessError('DESK_ALREADY_BOOKED', 'Desk already booked for this day');
+      const existingDesk = await bookingRepository.findDeskBookingOnDate(dto.deskId, dateOnly);
+      if (existingDesk)
+        throw new BusinessError('DESK_ALREADY_BOOKED', 'Desk already booked for this day');
 
-    const created = await bookingRepository.create({ userId, deskId: dto.deskId, date: dateOnly });
-    return created;
+      const created = await bookingRepository.create({ userId, deskId: dto.deskId, date: dateOnly });
+      return created;
+    });
   }
 
   async cancel(userId: string, bookingId: string, reason?: string) {

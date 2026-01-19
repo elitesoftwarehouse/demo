@@ -27,3 +27,25 @@ export function startOfDateMs(dateOnly: string): number {
   const d = new Date(dateOnly + 'T00:00:00');
   return d.getTime();
 }
+
+// --- Holidays support (optional, in-memory configuration) ---
+// Store canonical YYYY-MM-DD strings
+const HOLIDAYS = new Set<string>();
+
+export function addHoliday(dateOnly: string) {
+  if (!isValidDateOnly(dateOnly)) throw new Error('Invalid holiday date');
+  HOLIDAYS.add(dateOnly);
+}
+
+export function setHolidays(dates: string[]) {
+  HOLIDAYS.clear();
+  for (const d of dates) addHoliday(d);
+}
+
+export function isHoliday(dateOnly: string): boolean {
+  return HOLIDAYS.has(dateOnly);
+}
+
+export function isBusinessDay(dateOnly: string): boolean {
+  return isWorkingDay(dateOnly) && !isHoliday(dateOnly);
+}

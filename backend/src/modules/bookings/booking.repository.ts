@@ -12,6 +12,7 @@ export interface BookingRecord {
   createdAt: number; // epoch ms
   updatedAt: number; // epoch ms
   cancelReason?: string;
+  cancelledAt?: number; // epoch ms
 }
 
 const bookings: BookingRecord[] = [];
@@ -59,9 +60,11 @@ class BookingRepository {
   async cancel(id: string, reason?: string): Promise<BookingRecord | null> {
     const b = bookings.find((x) => x.id === id);
     if (!b) return null;
+    if (b.status === 'CANCELLED') return b;
     b.status = 'CANCELLED';
     b.cancelReason = reason;
-    b.updatedAt = Date.now();
+    b.cancelledAt = Date.now();
+    b.updatedAt = b.cancelledAt;
     return b;
   }
 }
