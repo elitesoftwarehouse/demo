@@ -1,22 +1,30 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "jsx": "react-jsx",
+    "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
+    "isolatedModules": false,
     "noEmit": true,
-    "baseUrl": "./src",
+    "types": ["jest", "node", "@testing-library/jest-dom"],
+    "baseUrl": ".",
+    "typeRoots": ["./src/types", "./node_modules/@types"],
     "paths": {
-      "@/*": ["./*"]
+      "react": ["src/types/react-shim"],
+      "react/jsx-runtime": ["src/types/react-jsx-runtime-shim"],
+      "react-dom/client": ["src/types/react-dom-client-shim"],
+      "react-router-dom": ["src/types/react-router-dom-shim"],
+      "@testing-library/react": ["src/types/testing-library-react-shim"]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src",
+    "src/types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
 }
