@@ -7,6 +7,10 @@ const loginSchema = z.object({
   password: z.string().min(8),
 });
 
+const refreshSchema = z.object({
+  refreshToken: z.string().min(10),
+});
+
 export async function loginController(req: Request, res: Response) {
   // Basic request logging without sensitive data
   console.log('Login attempt', {
@@ -24,7 +28,7 @@ export async function loginController(req: Request, res: Response) {
   }
 
   try {
-    const result = await authService.login(parse.data);
+    const result = await authService.login(parse.data, req.headers['user-agent']);
     return res.status(200).json(result);
   } catch (err: any) {
     if (err?.code === 'INVALID_CREDENTIALS') {
@@ -34,6 +38,23 @@ export async function loginController(req: Request, res: Response) {
       return res.status(403).json({ error: 'User is not allowed to login' });
     }
     console.error('Login error', { message: err?.message });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function refreshController(req: Request, res: Response) {
+  const parse = refreshSchema.safeParse(req.body);
+  if (!parse.success) {
+    return res.status(400).json({ error: 'Invalid request body' });
+  }
+  try {
+    const result = await authService.refresh(parse.data.refreshToken);
+    return res.status(200).json(result);
+  } catch (err: any) {
+    if (err?.code === 'INVALID_REFRESH') {
+      return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    }
+    console.error('Refresh error', { message: err?.message });
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

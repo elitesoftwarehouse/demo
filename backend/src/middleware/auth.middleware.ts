@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../config/jwt';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -15,11 +15,9 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
     return res.status(401).json({ error: 'Missing Authorization header' });
   }
   const token = header.substring('Bearer '.length);
-  const secret = process.env.JWT_SECRET;
-  if (!secret) return res.status(500).json({ error: 'Server misconfiguration' });
 
   try {
-    const payload = jwt.verify(token, secret) as any;
+    const payload = verifyAccessToken(token) as any;
     req.user = { id: payload.sub, role: payload.role, tenantId: payload.tenantId };
     next();
   } catch (err) {

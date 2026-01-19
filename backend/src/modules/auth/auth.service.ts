@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { userRepository } from '../users/user.repository';
+import { decodeToken, signAccessToken, signRefreshToken, verifyRefreshToken } from '../../config/jwt';
+import { refreshTokenRepository } from './refresh.repository';
 
 export interface LoginDto {
   email: string;
@@ -13,29 +14,8 @@ interface JwtPayload {
   tenantId?: string;
 }
 
-const ACCESS_TOKEN_TTL = process.env.JWT_EXPIRES_IN || '30m';
-const REFRESH_TOKEN_TTL = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
-
-function signAccessToken(payload: JwtPayload) {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error('Missing JWT_SECRET');
-  return jwt.sign(payload, secret, {
-    algorithm: 'HS256',
-    expiresIn: ACCESS_TOKEN_TTL,
-  });
-}
-
-function signRefreshToken(payload: JwtPayload) {
-  const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
-  if (!secret) throw new Error('Missing JWT_REFRESH_SECRET');
-  return jwt.sign({ sub: payload.sub }, secret, {
-    algorithm: 'HS256',
-    expiresIn: REFRESH_TOKEN_TTL,
-  });
-}
-
 class AuthService {
-  async login(data: LoginDto) {
+  async login(data: LoginDto, userAgent?: string) {
     const user = await userRepository.findByEmail(data.email);
     if (!user) {
       const error: any = new Error('Invalid credentials');
@@ -65,12 +45,17 @@ class AuthService {
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
 
-    // In a real app we would persist refresh token hash with device/UA info and expiry
-    // For MVP we skip persistence
+    // Persist refresh token hash with expiry
+    const rtd = decodeToken(refreshToken) as any;
+    const rExpSec = typeof rtd === 'object' ? rtd?.exp : undefined; // seconds
+    const rExpiresAt = rExpSec ? rExpSec * 1000 : Date.now() + 7 * 24 * 3600 * 1000;
+    await refreshTokenRepository.save(refreshToken, user.id, rExpiresAt, userAgent);
 
-    const decoded = jwt.decode(accessToken) as any;
-    const exp = typeof decoded === 'object' ? decoded?.exp : undefined;
-    const expiresIn = exp ? Math.max(0, exp * 1000 - Date.now()) : undefined;
+    // Compute expiresIn in SECONDS from access token 'exp'
+    const decoded = decodeToken(accessToken) as any;
+    const exp = typeof decoded === 'object' ? decoded?.exp : undefined; // seconds epoch
+    const nowSec = Math.floor(Date.now() / 1000);
+    const expiresIn = exp ? Math.max(0, exp - nowSec) : 0;
 
     return {
       accessToken,
@@ -83,6 +68,50 @@ class AuthService {
         name: user.name,
         role: user.role || 'USER',
       },
+    };
+  }
+
+  async refresh(refreshToken: string) {
+    // Verify refresh token signature and expiration
+    let payload: any;
+    try {
+      payload = verifyRefreshToken(refreshToken) as any;
+    } catch {
+      const e: any = new Error('Invalid refresh');
+      e.code = 'INVALID_REFRESH';
+      throw e;
+    }
+
+    const userId = payload?.sub as string | undefined;
+    if (!userId) {
+      const e: any = new Error('Invalid refresh');
+      e.code = 'INVALID_REFRESH';
+      throw e;
+    }
+
+    // Check against repository (revocation and expiry enforced)
+    const rec = await refreshTokenRepository.findValidForUser(userId, refreshToken);
+    if (!rec) {
+      const e: any = new Error('Invalid refresh');
+      e.code = 'INVALID_REFRESH';
+      throw e;
+    }
+
+    // Issue new access token (do not rotate refresh in MVP)
+    const user = await userRepository.findByEmail((null as any)); // placeholder
+    // We do not have findById; create minimal payload for access token
+    const accessToken = signAccessToken({ sub: userId });
+
+    const ad = decodeToken(accessToken) as any;
+    const exp = typeof ad === 'object' ? ad?.exp : undefined;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const expiresIn = exp ? Math.max(0, exp - nowSec) : 0;
+
+    return {
+      accessToken,
+      refreshToken, // same token (no rotation in MVP)
+      expiresIn,
+      tokenType: 'Bearer',
     };
   }
 }

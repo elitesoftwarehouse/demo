@@ -62,8 +62,7 @@ function clearPersistedAuth() {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>(() => loadPersistedAuth());
-  const tokenRef = useRef(null as unknown as string | null);
-  tokenRef.current = state.accessToken;
+  const tokenRef = useRef<string | null>(state.accessToken);
 
   useEffect(() => {
     tokenRef.current = state.accessToken;
@@ -121,17 +120,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearPersistedAuth();
   }, []);
 
-  const value = useMemo((): AuthContextValue => (
-    {
+  const value = useMemo<AuthContextValue>(
+    () => ({
       ...state,
       isAuthenticated: Boolean(state.accessToken && state.user),
       login,
       logout,
-    }
-  ), [state, login, logout]);
+    }),
+    [state, login, logout]
+  );
 
-  // Avoid JSX in .ts file
-  return React.createElement(AuthContext.Provider as any, { value }, children as any);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
