@@ -47,3 +47,52 @@ export async function loginApi(email: string, password: string): Promise<LoginRe
     body: JSON.stringify({ email, password }),
   });
 }
+
+// Booking API
+export interface BookingMapDesk {
+  id: number;
+  code: string;
+  label: string;
+  row: number;
+  col: number;
+  active: boolean;
+  occupied: boolean;
+  myBooking: boolean;
+  bookingId?: string;
+}
+
+export interface BookingMapResponse {
+  date: string; // YYYY-MM-DD
+  desks: BookingMapDesk[];
+}
+
+export interface BookingEntity {
+  id: string;
+  userId: string;
+  deskId: number;
+  date: string; // YYYY-MM-DD
+  status: 'ACTIVE' | 'CANCELLED';
+  createdAt: string;
+  updatedAt: string;
+  cancelledReason?: string;
+  cancelledAt?: string;
+}
+
+export function getBookingMap(date: string) {
+  const q = encodeURIComponent(date);
+  return apiFetch<BookingMapResponse>(`/bookings/map?date=${q}`);
+}
+
+export function createBooking(deskId: number, date: string) {
+  return apiFetch<BookingEntity>('/bookings', {
+    method: 'POST',
+    body: JSON.stringify({ deskId, date }),
+  });
+}
+
+export function cancelBooking(bookingId: string, reason?: string) {
+  return apiFetch<BookingEntity>(`/bookings/${bookingId}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ reason }),
+  });
+}
