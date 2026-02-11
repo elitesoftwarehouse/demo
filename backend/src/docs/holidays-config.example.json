@@ -1,0 +1,27 @@
+{
+  "timezone": "Europe/Rome",
+  "applySundays": true,
+  "applyPasquetta": true,
+  "fixedMMDD": [
+    "01-01",
+    "06-01",
+    "04-25",
+    "05-01",
+    "06-02",
+    "08-15",
+    "11-01",
+    "12-08",
+    "12-25",
+    "12-26"
+  ],
+  "localFixedMMDD": [
+    "06-29" // Esempio: patrono locale
+  ],
+  "extraClosedDates": [
+    "2026-12-31"
+  ],
+  "exceptionOpenDates": [
+    "2026-12-26"
+  ],
+  "lookAheadMonths": 18
+}

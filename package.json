@@ -1,0 +1,7 @@
+{
+  "name": "demo-monorepo",
+  "private": true,
+  "scripts": {
+    "test": "node ./backend/node_modules/jest/bin/jest.js --runInBand --config ./jest.config.js"
+  }
+}

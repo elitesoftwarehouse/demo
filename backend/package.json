@@ -1,0 +1,26 @@
+{
+  "name": "smartdesk-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "echo 'No linter configured yet'",
+    "test": "node ./node_modules/jest/bin/jest.js --runInBand --config ../jest.config.js"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
+    "@types/react": "^18.2.56",
+    "@types/react-dom": "^18.2.19",
+    "@types/react-router-dom": "^5.3.3",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/user-event": "^14.5.2"
+  }
+}
