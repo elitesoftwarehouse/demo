@@ -1,0 +1,28 @@
+/* badges.css - shared styles for booking status badges */
+:root {
+  --badge-attiva-bg: #16A34A; /* green 600 */
+  --badge-passata-bg: #6B7280; /* gray 500 */
+  --badge-cancellata-bg: #DC2626; /* red 600 */
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 9999px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.badge--sm { height: 22px; padding: 0 10px; font-size: 12px; }
+.badge--md { height: 28px; padding: 0 12px; font-size: 14px; }
+
+.badge--attiva { background: var(--badge-attiva-bg); color: #fff; }
+.badge--passata { background: var(--badge-passata-bg); color: #fff; opacity: 0.95; }
+.badge--cancellata { background: var(--badge-cancellata-bg); color: #fff; }
+.badge--neutral { background: transparent; color: #374151; border: 1px solid #9CA3AF; }
+
+.badge:focus-visible {
+  outline: 2px solid #1D4ED8; /* blue 700 */
+  outline-offset: 2px;
+}
